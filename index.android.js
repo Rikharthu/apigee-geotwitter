@@ -1,9 +1,3 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- * @flow
- */
-
 import React, { Component } from 'react';
 import {
   AppRegistry,
@@ -13,41 +7,118 @@ import {
   ScrollView,
   TextInput,
   TouchableOpacity,
-  Vibration
+  NativeModules,
+  Vibration,
+  TouchableHighlight
 } from 'react-native';
+import Button from './src/components/Button'
+import LoginForm from './src/components/LoginForm'
+
 
 export default class GeoTwitter extends Component {
+
+  state={
+    tweets:[],
+    users:[],
+    done:false,
+    message:null
+  }
+
+  componentWillMount(){
+    this.refreshChat();
+    
+
+  }
+
   render() {
+    console.log(this.state.apiResponse)
     return (
       <View style={styles.container}>
+
+      <LoginForm />
+      {/*
         <View>
         <Text style={styles.welcome}>
-          Welcome to React Native!
+          {
+            this.state.users.length>0?
+              this.state.users.map(function(user){
+                return user.username+", "
+              })
+              :null
+          }
         </Text>
-        <Text style={styles.instructions}>
-          To get started, edit index.android.js
-        </Text>
-        <Text style={styles.instructions}>
-          Double tap R on your keyboard to reload,{'\n'}
-          Shake or press menu button for dev menu
-        </Text>
+       
         </View>
         <View style={styles.chatArea} >
           <ScrollView>
-            <View style={styles.messagesArea}>
-              { this.getDebugMessages(100)}
+            <View style={styles.messagesArea}>          
+              {this.state.done? this.renderTweets():null}
             </View>          
           </ScrollView>    
           <View style={styles.messageForm}>
-            <TextInput/>
-            <Text>Send</Text>
+            <TextInput 
+              onChangeText={ text => this.setState({message: text})}
+              style={{flex:1}}/>
+            <TouchableHighlight
+              onPress={()=>{
+                 NativeModules.AndroidCallback.sendTweet(
+                   this.state.message,
+                   "5a220204-ceb1-11e6-a734-122e0737977d",
+                  (error)=>{console.log(error)},
+                  (response)=>{
+                    console.log(response)
+                    // TODO refresh tweets
+                    this.refreshChat();
+                  }
+                  
+                )
+              }}>
+              <Text>Send</Text>
+            </TouchableHighlight>
           </View> 
         </View> 
+        */}
       </View>
     );
   }
 
-  getDebugMessages=function(count){
+  refreshChat=()=>{
+    this.setState({done:false})
+
+    // NativeModules.AndroidCallback.getEntitiesAsync("user",
+    //   "uuid = 5a220204-ceb1-11e6-a734-122e0737977d",
+    NativeModules.AndroidCallback.getEntitiesAsync("tweet",
+      "",
+      (error)=>{console.log(error)},
+      (response)=>{this.setState({tweets:response})}
+      
+    )
+
+    // get users
+    NativeModules.AndroidCallback.getEntitiesAsync("user",
+      "",
+      (error)=>{console.log(error)},
+      (response)=>{
+        this.setState({users:response})
+
+        // Map tweets to authors
+        users = this.state.users;
+        tweets = this.state.tweets;
+        users.map(function(user){
+          tweets.map(function(tweet){
+            if(tweet.authorUuid===user.uuid){
+              tweet.author=user.username;
+            }
+          })     
+        })
+        this.setState({users:users, tweets:tweets, done:true})
+        // map usernames to messages
+      }
+      
+    )
+  }
+
+  getDebugMessages=function(count,name,message){
     var messages = [];
     for(i=0;i<count;i++){
       messages.push(
@@ -55,12 +126,12 @@ export default class GeoTwitter extends Component {
           Vibration.vibrate();
           console.log('press')
         }}>
-        <View style={{backgroundColor:'white',margin:4, padding:4}}>
+        <View key={i} style={{backgroundColor:'white',margin:4, padding:4}}>
           <View style={{flexDirection:'row', alignItems:'flex-end'}}>
-            <Text style={{fontWeight:'bold', fontSize:18, color:'purple'}}>Vasja</Text>
+            <Text style={{fontWeight:'bold', fontSize:18, color:'purple'}}>{name}</Text>
             <Text>Riga, Latvia</Text>
           </View>
-          <Text style={styles.message} key={i}>The cake is a lie!</Text>
+          <Text style={styles.message} >{message}</Text>
           <Text style={{alignSelf:'flex-end'}}>12:30</Text>
         </View>
         </TouchableOpacity>
@@ -69,12 +140,32 @@ export default class GeoTwitter extends Component {
     return messages;
   }
 
+  renderTweets=()=>{
+    return this.state.tweets.map(function(tweet,index){
+      return (
+        <TouchableOpacity onPress={()=>{
+          Vibration.vibrate();
+          console.log('press')
+        }}>
+          <View key={index} style={{backgroundColor:'white',margin:4, padding:4}}>
+            <View style={{flexDirection:'row', alignItems:'flex-end'}}>
+              <Text style={{fontWeight:'bold', fontSize:18, color:'purple'}}>{tweet.author}</Text>
+              <Text>Riga, Latvia</Text>
+            </View>
+            <Text style={styles.message} >{tweet.message}</Text>
+            <Text style={{alignSelf:'flex-end'}}>12:30</Text>
+          </View>
+        </TouchableOpacity>
+      )
+    })
+  }
+
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#212020',
+    backgroundColor: 'blue',
   },
   welcome: {
     color:'white',
@@ -108,4 +199,4 @@ const styles = StyleSheet.create({
   }
 });
 
-AppRegistry.registerComponent('GeoTwitter', () => GeoTwitter);
+AppRegistry.registerComponent('geotwitter', () => GeoTwitter);

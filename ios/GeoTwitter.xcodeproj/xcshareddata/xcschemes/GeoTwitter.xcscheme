@@ -15,9 +15,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-               BuildableName = "GeoTwitter.app"
-               BlueprintName = "GeoTwitter"
-               ReferencedContainer = "container:GeoTwitter.xcodeproj">
+               BuildableName = "geotwitter.app"
+               BlueprintName = "geotwitter"
+               ReferencedContainer = "container:geotwitter.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
          <BuildActionEntry
@@ -29,9 +29,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "00E356ED1AD99517003FC87E"
-               BuildableName = "GeoTwitterTests.xctest"
-               BlueprintName = "GeoTwitterTests"
-               ReferencedContainer = "container:GeoTwitter.xcodeproj">
+               BuildableName = "geotwitterTests.xctest"
+               BlueprintName = "geotwitterTests"
+               ReferencedContainer = "container:geotwitter.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -47,9 +47,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "00E356ED1AD99517003FC87E"
-               BuildableName = "GeoTwitterTests.xctest"
-               BlueprintName = "GeoTwitterTests"
-               ReferencedContainer = "container:GeoTwitter.xcodeproj">
+               BuildableName = "geotwitterTests.xctest"
+               BlueprintName = "geotwitterTests"
+               ReferencedContainer = "container:geotwitter.xcodeproj">
             </BuildableReference>
          </TestableReference>
       </Testables>
@@ -57,9 +57,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-            BuildableName = "GeoTwitter.app"
-            BlueprintName = "GeoTwitter"
-            ReferencedContainer = "container:GeoTwitter.xcodeproj">
+            BuildableName = "geotwitter.app"
+            BlueprintName = "geotwitter"
+            ReferencedContainer = "container:geotwitter.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
    </TestAction>
@@ -77,9 +77,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-            BuildableName = "GeoTwitter.app"
-            BlueprintName = "GeoTwitter"
-            ReferencedContainer = "container:GeoTwitter.xcodeproj">
+            BuildableName = "geotwitter.app"
+            BlueprintName = "geotwitter"
+            ReferencedContainer = "container:geotwitter.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
       <AdditionalOptions>
@@ -96,9 +96,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-            BuildableName = "GeoTwitter.app"
-            BlueprintName = "GeoTwitter"
-            ReferencedContainer = "container:GeoTwitter.xcodeproj">
+            BuildableName = "geotwitter.app"
+            BlueprintName = "geotwitter"
+            ReferencedContainer = "container:geotwitter.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>
