@@ -11,6 +11,7 @@ import com.facebook.react.bridge.Callback;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
+import com.facebook.react.bridge.ReadableMap;
 import com.facebook.react.bridge.WritableArray;
 import com.facebook.react.bridge.WritableMap;
 import com.geotwitter.baas.ApiBAAS;
@@ -27,7 +28,7 @@ import javax.annotation.Nullable;
 
 
 public class ApigeeBAASModule extends ReactContextBaseJavaModule {
-
+    public static final String LOG_TAG=ApigeeBAASModule.class.getSimpleName();
     public static final String MODULE_NAME = "AndroidCallback";
 
     private ApiBAAS apiBAAS;
@@ -117,13 +118,19 @@ public class ApigeeBAASModule extends ReactContextBaseJavaModule {
         return tweet;
     }
 
+    /**
+     * Creates new Tweet in the "tweets" collection
+     * @param message
+     * @param userUUID
+     * @param errorCallback
+     * @param finishedCallback
+     */
     @ReactMethod
     public void sendTweet(String message,String userUUID,final Callback errorCallback, final Callback finishedCallback){
         Map<String,Object> properties = new HashMap<>();
         properties.put("message",message);
         properties.put("type","tweet");
-        properties.put("author_uuid",userUUID);
-
+        properties.put("author_uuid",apiBAAS.getApigeeDataClient().getLoggedInUser().getUuid());
         apiBAAS.getApigeeDataClient().createEntityAsync(properties, new ApiResponseCallback() {
             @Override
             public void onResponse(ApiResponse apiResponse) {
@@ -133,6 +140,42 @@ public class ApigeeBAASModule extends ReactContextBaseJavaModule {
             @Override
             public void onException(Exception e) {
                 errorCallback.invoke(e.getMessage());
+            }
+        });
+    }
+
+    @ReactMethod
+    public void registerUser(ReadableMap credentials, final Callback errorCallback, final Callback successCallback){
+        String username = credentials.getString("username");
+        String password = credentials.getString("password");
+        apiBAAS.getApigeeDataClient().authorizeAppUserAsync(username, password, new ApiResponseCallback() {
+            @Override
+            public void onResponse(ApiResponse response) {
+                try {
+                    if (response != null) {
+                        // check if success
+                        if(response.completedSuccessfully()){
+                            // Success - access token is returned in the response
+                            Log.d(LOG_TAG,"Success, access token: "+ response.getAccessToken()+", expires: ");
+                            successCallback.invoke(response.getAccessToken());
+                        }else{
+                            // Error, probably wrong credentials
+                            Log.d(LOG_TAG,"Failed, "+response.toString());
+                            errorCallback.invoke(response.getAccessToken());
+                        }
+                    }
+                } catch (Exception e) {
+                    // Fail - most likely a bad username/password
+                    Log.e(LOG_TAG,e.toString());
+                    errorCallback.invoke(e.toString());
+                }
+            }
+
+            @Override
+            public void onException(Exception e) {
+                // Error
+                Log.d(LOG_TAG,e.toString());
+                errorCallback.invoke(e.toString());
             }
         });
     }

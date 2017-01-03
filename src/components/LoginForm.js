@@ -19,7 +19,29 @@ export default class LoginForm extends Component {
     state={
         username:null,
         password:null,
-        error:"Wrong credentials"
+        error:''
+    }
+
+    onLoginButtonPressed(){
+        const{ username,password}=this.state;
+        // authenticate
+
+        // reset error
+        this.setState({error:''})
+
+        NativeModules.AndroidCallback.registerUser(
+            {username:username, password:password},
+            (error)=>{ // FAIL
+                console.log(error)
+                // TODO make Java module pass error message
+                this.setState({error:'Wrong credentials'})
+            },
+            (response)=>{ // SUCCESS
+                // extract access token
+                // hz zachem
+                this.props.onLoggedIn();
+            }            
+          )
     }
 
     render(){
@@ -44,8 +66,14 @@ export default class LoginForm extends Component {
                 </View>
                 {<Text style={styles.error}>{this.state.error}</Text>}
                 <View style={{flexDirection:'row', marginBottom:10}}>
-                    <Button onPress={()=>{console.log(this.state.username)}}>Log in</Button>
-                    <Button onPress={()=>{}}>Register</Button>
+                    <Button 
+                        onPress={this.onLoginButtonPressed.bind(this)}>
+                        Log in
+                    </Button>
+                    <Button 
+                        onPress={()=>{}}>
+                        Register
+                    </Button>
                 </View>
             </View>
         )

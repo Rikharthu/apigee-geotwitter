@@ -21,7 +21,8 @@ export default class GeoTwitter extends Component {
     tweets:[],
     users:[],
     done:false,
-    message:null
+    message:null,
+    loggedIn:false
   }
 
   componentWillMount(){
@@ -30,12 +31,74 @@ export default class GeoTwitter extends Component {
 
   }
 
+  renderContent(){
+    console.log("render content")
+    if(this.state.loggedIn===false){
+      console.log("login/register content")
+      // not logged in, show login/register form
+      return (
+        <LoginForm 
+          onLoggedIn={()=>{
+            console.log("logged in")
+            this.setState({loggedIn:true})
+          }}/>
+      )
+    }else{
+      console.log("loggedin content")
+      console.log(this.state.tweets)
+      // logged in
+      return(
+        <View style={{flex:1}}>
+          <View>
+            <Text style={styles.welcome}>
+              {
+                this.state.users.length>0?
+                  this.state.users.map(function(user){
+                    return user.username+", "
+                  })
+                  :null
+              }
+            </Text>       
+          </View>          
+          <View style={{flex:1}} >
+            <ScrollView>
+              <View style={styles.messagesArea}>          
+                {this.renderTweets()}
+              </View>          
+            </ScrollView>    
+            <View style={styles.messageForm}>
+              <TextInput 
+                onChangeText={ text => this.setState({message: text})}
+                style={{flex:1}}/>
+              <TouchableHighlight
+                onPress={()=>{
+                  NativeModules.AndroidCallback.sendTweet(
+                    this.state.message,
+                    "5a220204-ceb1-11e6-a734-122e0737977d",
+                    (error)=>{console.log(error)},
+                    (response)=>{
+                      console.log(response)
+                      // TODO refresh tweets
+                      this.refreshChat();
+                    }
+                    
+                  )
+                }}>
+                <Text>Send</Text>
+              </TouchableHighlight>
+            </View> 
+          </View> 
+        </View>
+      )
+    }
+  }
+
   render() {
     console.log(this.state.apiResponse)
     return (
       <View style={styles.container}>
 
-      <LoginForm />
+        {this.renderContent()}
       {/*
         <View>
         <Text style={styles.welcome}>
@@ -83,6 +146,7 @@ export default class GeoTwitter extends Component {
   }
 
   refreshChat=()=>{
+    /*
     this.setState({done:false})
 
     // NativeModules.AndroidCallback.getEntitiesAsync("user",
@@ -116,6 +180,16 @@ export default class GeoTwitter extends Component {
       }
       
     )
+    */
+
+    // using fetch and proxy
+    fetch("http://accintern-test.apigee.net/geotwitter/tweets?map_users=true")
+    .then(response=>response.json())
+    .then(responseJSON=>{
+      this.setState({tweets:responseJSON})
+    }).catch(error=>{
+      console.log(error);
+    })
   }
 
   getDebugMessages=function(count,name,message){
@@ -147,7 +221,7 @@ export default class GeoTwitter extends Component {
           Vibration.vibrate();
           console.log('press')
         }}>
-          <View key={index} style={{backgroundColor:'white',margin:4, padding:4}}>
+          <View key={index} style={{backgroundColor:'white',margin:4, padding:4,borderRadius:10}}>
             <View style={{flexDirection:'row', alignItems:'flex-end'}}>
               <Text style={{fontWeight:'bold', fontSize:18, color:'purple'}}>{tweet.author}</Text>
               <Text>Riga, Latvia</Text>
