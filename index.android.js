@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import Button from './src/components/Button'
 import LoginForm from './src/components/LoginForm'
-
+import TweetsMap from './src/components/TweetsMap'
 
 export default class GeoTwitter extends Component {
 
@@ -24,7 +24,8 @@ export default class GeoTwitter extends Component {
     message:null,
     loggedIn:false,
     initialPosition:'unknown',
-    lastPosition:'unknown'
+    lastPosition:'unknown',
+    showMap:false
   }
 
   watchId;
@@ -36,10 +37,9 @@ export default class GeoTwitter extends Component {
           var initialPosition = JSON.stringify(position);
           this.setState({initialPosition});
       },
-      (error) => alert("initial:"+JSON.stringify(error)),
+      (error) => console.log("initial:"+JSON.stringify(error)),
       {enableHighAccuracy: false, timeout: 20000, maximumAge: 10000}
       );
-      alert("listening for location updates")
       // start listening for location updates
       this.watchID = navigator.geolocation.watchPosition((position) => {
           console.log("lat= "+position.coords.latitude+", long= "+position.coords.longitude)
@@ -52,11 +52,9 @@ export default class GeoTwitter extends Component {
 
   componentWillUnmount() {
       // stop listening for location updates
-      navigator.geolocation.clearWatch(this.watchID);
   }
 
   componentWillMount(){
-    alert("componentedwillunmount")
     this.refreshChat();
     
 
@@ -64,17 +62,23 @@ export default class GeoTwitter extends Component {
 
   renderContent(){
     console.log("render content")
-    if(this.state.loggedIn===false){
+    if(this.state.loggedIn===false && this.state.showMap===false){
       console.log("login/register content")
       // not logged in, show login/register form
-      return (
+      return ( 
+        <View>
         <LoginForm 
           onLoggedIn={()=>{
             console.log("logged in")
             this.setState({loggedIn:true})
           }}/>
+          <TouchableHighlight
+              onPress={()=>{this.setState({showMap:true})}}>
+              <Text style={{color:'white', fontSize:40}}>MAP</Text>
+            </TouchableHighlight>   
+        </View>
       )
-    }else{
+    }else if(this.state.showMap===false){
       console.log("loggedin content")
       console.log(this.state.tweets)
       // logged in
@@ -84,7 +88,11 @@ export default class GeoTwitter extends Component {
             <TouchableHighlight
               onPress={this.refreshChat}>
               <Text>REFRESH</Text>
-            </TouchableHighlight>      
+            </TouchableHighlight>    
+            <TouchableHighlight
+              onPress={()=>{this.setState({showMap:true})}}>
+              <Text style={{color:'white', fontSize:40}}>MAP</Text>
+            </TouchableHighlight>     
           </View>          
           <View style={{flex:1}} >
             <ScrollView>
@@ -118,6 +126,13 @@ export default class GeoTwitter extends Component {
           </View> 
         </View>
       )
+    }else{
+      console.log("map content")
+      return(
+        <View style={{flex:1,backgroundColor:'green'}}>
+          <TweetsMap />
+        </View>
+      )
     }
   }
 
@@ -127,89 +142,12 @@ export default class GeoTwitter extends Component {
       <View style={styles.container}>
 
         {this.renderContent()}
-      {/*
-        <View>
-        <Text style={styles.welcome}>
-          {
-            this.state.users.length>0?
-              this.state.users.map(function(user){
-                return user.username+", "
-              })
-              :null
-          }
-        </Text>
-       
-        </View>
-        <View style={styles.chatArea} >
-          <ScrollView>
-            <View style={styles.messagesArea}>          
-              {this.state.done? this.renderTweets():null}
-            </View>          
-          </ScrollView>    
-          <View style={styles.messageForm}>
-            <TextInput 
-              onChangeText={ text => this.setState({message: text})}
-              style={{flex:1}}/>
-            <TouchableHighlight
-              onPress={()=>{
-                 NativeModules.AndroidCallback.sendTweet(
-                   this.state.message,
-                   "5a220204-ceb1-11e6-a734-122e0737977d",
-                  (error)=>{console.log(error)},
-                  (response)=>{
-                    console.log(response)
-                    // TODO refresh tweets
-                    this.refreshChat();
-                  }
-                  
-                )
-              }}>
-              <Text>Send</Text>
-            </TouchableHighlight>
-          </View> 
-        </View> 
-        */}
+      
       </View>
     );
   }
 
   refreshChat=()=>{
-    /*
-    this.setState({done:false})
-
-    // NativeModules.AndroidCallback.getEntitiesAsync("user",
-    //   "uuid = 5a220204-ceb1-11e6-a734-122e0737977d",
-    NativeModules.AndroidCallback.getEntitiesAsync("tweet",
-      "",
-      (error)=>{console.log(error)},
-      (response)=>{this.setState({tweets:response})}
-      
-    )
-
-    // get users
-    NativeModules.AndroidCallback.getEntitiesAsync("user",
-      "",
-      (error)=>{console.log(error)},
-      (response)=>{
-        this.setState({users:response})
-
-        // Map tweets to authors
-        users = this.state.users;
-        tweets = this.state.tweets;
-        users.map(function(user){
-          tweets.map(function(tweet){
-            if(tweet.authorUuid===user.uuid){
-              tweet.author=user.username;
-            }
-          })     
-        })
-        this.setState({users:users, tweets:tweets, done:true})
-        // map usernames to messages
-      }
-      
-    )
-    */
-
     // using fetch and proxy
     fetch("http://accintern-test.apigee.net/geotwitter/tweets?map_users=true")
     .then(response=>response.json())
@@ -218,31 +156,9 @@ export default class GeoTwitter extends Component {
     }).catch(error=>{
       console.log(error);
     })
-  }
+  }  
 
-  getDebugMessages=function(count,name,message){
-    var messages = [];
-    for(i=0;i<count;i++){
-      messages.push(
-        <TouchableOpacity onPress={()=>{
-          Vibration.vibrate();
-          console.log('press')
-        }}>
-        <View key={i} style={{backgroundColor:'white',margin:4, padding:4}}>
-          <View style={{flexDirection:'row', alignItems:'flex-end'}}>
-            <Text style={{fontWeight:'bold', fontSize:18, color:'purple'}}>{name}</Text>
-            <Text>Riga, Latvia</Text>
-          </View>
-          <Text style={styles.message} >{message}</Text>
-          <Text style={{alignSelf:'flex-end'}}>12:30</Text>
-        </View>
-        </TouchableOpacity>
-        );
-    }
-    return messages;
-  }
-
-  renderTweets=()=>{
+  renderTweets=(onItemPressed)=>{
     return this.state.tweets.map(function(tweet,index){
       return (
         <TouchableOpacity onPress={()=>{
