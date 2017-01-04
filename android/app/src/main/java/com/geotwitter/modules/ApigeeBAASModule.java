@@ -126,11 +126,15 @@ public class ApigeeBAASModule extends ReactContextBaseJavaModule {
      * @param finishedCallback
      */
     @ReactMethod
-    public void sendTweet(String message,String userUUID,final Callback errorCallback, final Callback finishedCallback){
+    public void sendTweet(ReadableMap tweet,final Callback errorCallback, final Callback finishedCallback){
         Map<String,Object> properties = new HashMap<>();
-        properties.put("message",message);
+        properties.put("message",tweet.getString("message"));
         properties.put("type","tweet");
         properties.put("author_uuid",apiBAAS.getApigeeDataClient().getLoggedInUser().getUuid());
+        Map<String,Object> location = new HashMap<>();
+        location.put("latitude",tweet.getInt("latitude"));
+        location.put("longitude",tweet.getInt("longitude"));
+        properties.put("location",location);
         apiBAAS.getApigeeDataClient().createEntityAsync(properties, new ApiResponseCallback() {
             @Override
             public void onResponse(ApiResponse apiResponse) {

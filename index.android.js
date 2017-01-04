@@ -50,15 +50,10 @@ export default class GeoTwitter extends Component {
       return(
         <View style={{flex:1}}>
           <View>
-            <Text style={styles.welcome}>
-              {
-                this.state.users.length>0?
-                  this.state.users.map(function(user){
-                    return user.username+", "
-                  })
-                  :null
-              }
-            </Text>       
+            <TouchableHighlight
+              onPress={this.refreshChat}>
+              <Text>REFRESH</Text>
+            </TouchableHighlight>      
           </View>          
           <View style={{flex:1}} >
             <ScrollView>
@@ -73,8 +68,9 @@ export default class GeoTwitter extends Component {
               <TouchableHighlight
                 onPress={()=>{
                   NativeModules.AndroidCallback.sendTweet(
-                    this.state.message,
-                    "5a220204-ceb1-11e6-a734-122e0737977d",
+                    { message:this.state.message,
+                      latitude:54,
+                      longitude:26 },
                     (error)=>{console.log(error)},
                     (response)=>{
                       console.log(response)

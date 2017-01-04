@@ -17,8 +17,8 @@ import Button from './Button'
 export default class LoginForm extends Component {
 
     state={
-        username:null,
-        password:null,
+        username:"Sony",
+        password:"Ericsson",
         error:''
     }
 

@@ -2,8 +2,8 @@
 // Please do not modify it manually. All changes will be lost.
 try {
     var path = require("path");
-    var Launcher = require("C:\\Users\\ricard.arman.kuodis\\.vscode\\extensions\\vsmobile.vscode-react-native-0.2.4\\out\\debugger\\launcher.js").Launcher;
-    new Launcher("c:\\Workspace\\ReactNative\\geotwitter", "c:\\Workspace\\ReactNative\\geotwitter").launch();
+    var Launcher = require("C:\\Users\\UberV\\.vscode\\extensions\\vsmobile.vscode-react-native-0.2.4\\out\\debugger\\launcher.js").Launcher;
+    new Launcher("d:\\Workspace\\React-Native\\geotwitter", "d:\\Workspace\\React-Native\\geotwitter").launch();
 } catch (e) {
     throw new Error("Unable to launch application. Try deleting .vscode/launchReactNative.js and restarting vscode.");
 }
