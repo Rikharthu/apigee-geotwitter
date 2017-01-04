@@ -22,10 +22,41 @@ export default class GeoTwitter extends Component {
     users:[],
     done:false,
     message:null,
-    loggedIn:false
+    loggedIn:false,
+    initialPosition:'unknown',
+    lastPosition:'unknown'
+  }
+
+  watchId;
+
+
+  componentDidMount() {
+      navigator.geolocation.getCurrentPosition(
+      (position) => {
+          var initialPosition = JSON.stringify(position);
+          this.setState({initialPosition});
+      },
+      (error) => alert("initial:"+JSON.stringify(error)),
+      {enableHighAccuracy: false, timeout: 20000, maximumAge: 10000}
+      );
+      alert("listening for location updates")
+      // start listening for location updates
+      this.watchID = navigator.geolocation.watchPosition((position) => {
+          console.log("lat= "+position.coords.latitude+", long= "+position.coords.longitude)
+          this.setState({lastPosition:position});
+      },
+      (error)=>{
+          alert(JSON.stringify(error))
+      });
+  }
+
+  componentWillUnmount() {
+      // stop listening for location updates
+      navigator.geolocation.clearWatch(this.watchID);
   }
 
   componentWillMount(){
+    alert("componentedwillunmount")
     this.refreshChat();
     
 
@@ -67,10 +98,11 @@ export default class GeoTwitter extends Component {
                 style={{flex:1}}/>
               <TouchableHighlight
                 onPress={()=>{
+                  alert(JSON.stringify(this.state.lastPosition))
                   NativeModules.AndroidCallback.sendTweet(
                     { message:this.state.message,
-                      latitude:54,
-                      longitude:26 },
+                      latitude:this.state.lastPosition.coords.latitude,
+                      longitude:this.state.lastPosition.coords.longitude },
                     (error)=>{console.log(error)},
                     (response)=>{
                       console.log(response)

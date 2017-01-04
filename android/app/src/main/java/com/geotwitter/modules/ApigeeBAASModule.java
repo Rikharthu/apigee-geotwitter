@@ -132,8 +132,8 @@ public class ApigeeBAASModule extends ReactContextBaseJavaModule {
         properties.put("type","tweet");
         properties.put("author_uuid",apiBAAS.getApigeeDataClient().getLoggedInUser().getUuid());
         Map<String,Object> location = new HashMap<>();
-        location.put("latitude",tweet.getInt("latitude"));
-        location.put("longitude",tweet.getInt("longitude"));
+        location.put("latitude",tweet.getDouble("latitude"));
+        location.put("longitude",tweet.getDouble("longitude"));
         properties.put("location",location);
         apiBAAS.getApigeeDataClient().createEntityAsync(properties, new ApiResponseCallback() {
             @Override
