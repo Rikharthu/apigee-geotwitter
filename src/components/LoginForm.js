@@ -12,7 +12,7 @@ import {
   TouchableHighlight
 } from 'react-native';
 import Button from './Button'
-
+import axios from 'axios';
 
 export default class LoginForm extends Component {
 
@@ -28,7 +28,35 @@ export default class LoginForm extends Component {
 
         // reset error
         this.setState({error:''})
+        
+        // get the OAUTH2 token
+        axios.post('https://apibaas-trial.apigee.net/accintern/geotwitter/token', {
+            grant_type: 'password',
+            username: 'Sony',
+            password:'Ericsson'
+        })
+        .then( (response)=> {
+            if(response.status===200){
+                // TODO save access_token
+                authData={
+                    access_token:response.data.access_token,
+                    expires_at:Math.floor(Date.now()/1000)+response.data.expires_in,
+                    user:response.data.user
+                }
+                this.props.onLoggedIn(authData);
+            }else{
+                // set returned error if it exists
+                alert("UNHANDLED ERROR IN RESPONSE");
+            }
+        })
+        .catch( (error) =>{
+            console.log("ERROR START")
+            console.log(error);
+            console.log("ERROR END")
+            this.setState({error:error.response.data.error_description || 'Error occured'})
+        });
 
+        /*
         NativeModules.AndroidCallback.registerUser(
             {username:username, password:password},
             (error)=>{ // FAIL
@@ -42,6 +70,7 @@ export default class LoginForm extends Component {
                 this.props.onLoggedIn();
             }            
           )
+          */
     }
 
     render(){
