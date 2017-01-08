@@ -17,9 +17,10 @@ import axios from 'axios';
 export default class LoginForm extends Component {
 
     state={
-        username:"Sony",
-        password:"Ericsson",
-        error:''
+        username:"",
+        password:"",
+        error:'',
+        register:false
     }
 
     onLoginButtonPressed(){
@@ -32,8 +33,8 @@ export default class LoginForm extends Component {
         // get the OAUTH2 token
         axios.post('https://apibaas-trial.apigee.net/accintern/geotwitter/token', {
             grant_type: 'password',
-            username: 'Sony',
-            password:'Ericsson'
+            username: username || 'Sony',
+            password: password || 'Ericsson'
         })
         .then( (response)=> {
             if(response.status===200){
@@ -56,22 +57,35 @@ export default class LoginForm extends Component {
             this.setState({error:error.response.data.error_description || 'Error occured'})
         });
 
-        /*
-        NativeModules.AndroidCallback.registerUser(
-            {username:username, password:password},
-            (error)=>{ // FAIL
-                console.log(error)
-                // TODO make Java module pass error message
-                this.setState({error:'Wrong credentials'})
-            },
-            (response)=>{ // SUCCESS
-                // extract access token
-                // hz zachem
-                this.props.onLoggedIn();
-            }            
-          )
-          */
+       
     }
+
+    onRegisterButtonPressed(){
+        console.log('registering new user')
+        const{ username,password}=this.state;
+
+        // reset error
+        this.setState({error:''})
+        
+        axios.post('https://apibaas-trial.apigee.net/accintern/geotwitter/users', {
+            username:this.state.username,
+            password:this.state.password
+        })
+        .then( (response)=> {
+            if(response.status===200){
+                // registered new user, now try to login
+                this.onLoginButtonPressed();
+            }else{
+                // set returned error if it exists
+                alert("UNHANDLED ERROR IN RESPONSE");
+            }
+        })
+        .catch( (error) =>{
+            console.log('register error',error);
+            this.setState({error:error.response.data.error_description || 'Error occured'})
+        });
+    }
+
 
     render(){
         return (
@@ -100,7 +114,7 @@ export default class LoginForm extends Component {
                         Log in
                     </Button>
                     <Button 
-                        onPress={()=>{}}>
+                        onPress={this.onRegisterButtonPressed.bind(this)}>
                         Register
                     </Button>
                 </View>

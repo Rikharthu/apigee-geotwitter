@@ -29,10 +29,10 @@ const styles = {
         justifyContent:'center',
         alignItems:'center',
         flex:1,
-        backgroundColor:'purple'
+        backgroundColor:'#2BB8E2'
     },
     logo:{
-        color:'white',
+        color:'#FFD932',
         fontSize:36,
         marginBottom:40,
         fontWeight:'bold'
@@ -42,8 +42,8 @@ const styles = {
     },
     label:{
         marginTop:10,
-       color:'#F8F8FF',
-       fontSize:16
+        color:'#F8F8FF',
+        fontSize:16
     }
 };
 

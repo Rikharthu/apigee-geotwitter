@@ -19,20 +19,38 @@ export default class LoginForm extends Component {
 
     state={
         region: {
-            latitude: 37.78825,
-            longitude: -122.4324,
+            latitude: 16.9496,
+            longitude: 24.1052,
             latitudeDelta: 0.0922,
             longitudeDelta: 0.0421,
         },
         marker:{
-            latlng: {latitude: 37.78825,
-            longitude: -122.4324},
+            latlng:{latitude: 56.9496,
+            longitude: 24.1052},
             title:'Title',
             descrtiption:'Description'
         }
     }
 
+    componentWillMount(){
+        this.setState({region: {
+            latitude: this.props.tweet.location.latitude,
+            longitude: this.props.tweet.location.longitude,
+            latitudeDelta: 0.0922,
+            longitudeDelta: 0.0421,
+        },
+        marker:{
+            latlng:{latitude: this.props.tweet.location.latitude,
+            longitude: this.props.tweet.location.longitude,},
+            title:(""+this.props.tweet.street_address).split(',')[0],
+            descrtiption:this.props.tweet.message
+        }
+        })
+    
+    }
+
     render(){
+
         return(
             <View style={styles.container}>
                 <Text>MAP HEADER</Text>
@@ -46,8 +64,12 @@ export default class LoginForm extends Component {
                         coordinate={this.state.marker.latlng}
                         title={this.state.marker.title}
                         description={this.state.marker.description}>
-                        <Text>MARKER TEXT</Text>
+                        <View style={styles.markerContainer}>
+                            <Text style={styles.markerAuthorName}>{this.props.tweet.author_username}</Text>
+                            <Text>{this.props.tweet.message}</Text>
+                        </View>
                     </MapView.Marker>
+                    
                 
                 </MapView>
             
@@ -66,10 +88,21 @@ const styles = {
     container: {
         flex:1,
         backgroundColor: '#F5FCFF',
-        borderWidth:1,
+        borderWidth:4,
         borderColor:'blue'
     },
     map:{
         flex:1,
+    },
+    markerContainer:{
+        backgroundColor:'white',
+        padding:4,
+        borderWidth:2,
+        borderColor:'#E5E5E5'
+    },
+    markerAuthorName:{
+        color:'black',
+        fontWeight:'bold',
+        fontSize:16
     }
 }
