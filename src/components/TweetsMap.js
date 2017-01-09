@@ -72,8 +72,6 @@ export default class LoginForm extends Component {
                     
                 
                 </MapView>
-            
-                <Text>MAP FOOTER</Text>
             </View>
         )
     }
@@ -86,10 +84,7 @@ export default class LoginForm extends Component {
 
 const styles = {
     container: {
-        flex:1,
-        backgroundColor: '#F5FCFF',
-        borderWidth:4,
-        borderColor:'blue'
+        flex:1
     },
     map:{
         flex:1,

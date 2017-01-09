@@ -11,16 +11,35 @@ import {
   Vibration,
   TouchableHighlight,
   AsyncStorage,
-  Modal
+  Modal,
+  ListView,
+  RefreshControl,
+  Navigator,
+  StatusBar,
+  Alert,
+  BackAndroid,
+  ActivityIndicator
 } from 'react-native';
 import Button from './src/components/Button'
 import LoginForm from './src/components/LoginForm'
 import LoadingScreen from './src/components/LoadingScreen'
 import TweetsMap from './src/components/TweetsMap'
 import TweetForm from './src/components/TweetForm'
+import TweetItem from './src/components/TweetItem'
+import ImageButton from './src/components/ImageButton'
 import axios from 'axios';
 axios.defaults.baseURL = 'http://accintern-test.apigee.net/geotwittertest';
 import moment from 'moment';
+
+
+var sceneNavigator; 
+BackAndroid.addEventListener('hardwareBackPress', () => {
+    if (sceneNavigator && sceneNavigator.getCurrentRoutes().length > 1) {
+        sceneNavigator.pop();
+        return true;
+    }
+    return false;
+});
 
 export default class GeoTwitter extends Component {
 
@@ -39,19 +58,21 @@ export default class GeoTwitter extends Component {
     authData:null,
     loadingMessage:'Loading...',
     selectedTweet:null,
-    showTweetForm:false
+    showTweetForm:false,
+    refreshing:false
   }
 
   authenticatedInterceptors={
     request:null,response:null
   }
-
+  
   watchId;
 
   setup=()=>{
     authData=this.state.authData;
     if(this.isAuthenticated()){
       // token not expired, authData exists
+      this.refreshChat();
     }else{
       // if authData exists, but token expired
       this.setState({authData:null})
@@ -73,7 +94,6 @@ export default class GeoTwitter extends Component {
         this.login(authData)
       }
 
-      alert(this.isAuthenticated()?"Authenticated":"Not authenticated")
 
       this.setState({
         isLoading:false
@@ -93,7 +113,6 @@ export default class GeoTwitter extends Component {
       // start listening for location updates (last known location wwill be used when writing new tweet)
       this.watchID = navigator.geolocation.watchPosition((position) => {
           //console.log("lat= "+position.coords.latitude+", long= "+position.coords.longitude)
-          alert('got location')
           this.setState({lastPosition:position});
       },
       (error)=>{
@@ -131,6 +150,10 @@ export default class GeoTwitter extends Component {
     }
   }
 
+  interceptors={
+    request:null,response:null
+  }
+  
   async saveAuthData(authData){
     try {
       await AsyncStorage.setItem('@geotwitter:authentication_data', JSON.stringify(authData));
@@ -146,16 +169,15 @@ export default class GeoTwitter extends Component {
     this.setState({authData:null})
     AsyncStorage.removeItem('@geotwitter:authentication_data');
     // TODO eject interceptors
-    axios.interceptors.request.eject(this.authenticatedInterceptors.request)
-    axios.interceptors.request.eject(this.authenticatedInterceptors.response)
+    axios.interceptors.request.eject( this.interceptors.request)
+    axios.interceptors.response.eject( this.interceptors.response)
   }
 
   login=(authData)=>{
-    alert('logging in')
     this.setState({authData})
     this.saveAuthData(authData)
     // add access token header for each outgoing request
-    this.authenticatedInterceptors.request=axios.interceptors.request.use(function(config){
+    this.interceptors.request=axios.interceptors.request.use(function(config){
         // Do something before request is sent
         console.log(this.state.authData)
         config.headers.Authorization ='Bearer '+ this.state.authData.access_token;
@@ -165,9 +187,8 @@ export default class GeoTwitter extends Component {
         console.log(config)
         return config;
       }.bind(this));
-
     // Add a response interceptor
-    this.authenticatedInterceptors.response=axios.interceptors.response.use( (response) =>{
+     this.interceptors.response=axios.interceptors.response.use( (response) =>{
         console.log("axios response interceptor:")
         console.log(response)
         // Do something with response data
@@ -179,12 +200,9 @@ export default class GeoTwitter extends Component {
           console.log('Interceptor Response Error:',error.response.data)
           console.log('Interceptor Response Error:',"Code: "+error.response.status)
           if(error.response.status==401){
-            alert('401 error'+error.response)
             
             // unauthorized => need to renew access token => show login screen and clear data
             this.logout();
-            // remove interceptors
-            axios.interceptors.request.eject(this.authenticatedInterceptor)
           }
         }else{
           // error in setting request
@@ -193,8 +211,87 @@ export default class GeoTwitter extends Component {
         // Do something with response error
         return Promise.reject(error);
     });
+    this.refreshChat();
   }
   
+  NavigationBarRouteMapper = {  
+    instance:this,
+    LeftButton: function(route, navigator, index, navState) {  
+      return (
+        <View style={styles.navbarItemContainer}>
+          <ImageButton
+              onPress={this.instance.logout}
+              src={require('./src/assets/logout.png')} />
+        </View>
+      )
+     },  
+    RightButton: function(route, navigator, index, navState) {
+      return (
+        <View style={[styles.navbarItemContainer,{marginRight:10}]}>
+          <View style={styles.navBarRightButtonsContainer}>
+            <ImageButton
+              onPress={this.instance.showTweetForm}
+              src={require('./src/assets/message.png')} />
+            {this.instance.state.refreshing?
+              <ActivityIndicator
+                  animating={true}
+                  size="large"
+                  color='white'
+                  style={{height:50,width:50}}
+              />:
+            <ImageButton
+              onPress={this.instance.refreshChat}
+              src={require('./src/assets/refresh.png')} />
+            }
+          </View>
+        </View>
+      )
+    },  
+    Title: function(route, navigator, index, navState) { 
+      return (
+        <View style={styles.navbarItemContainer}>
+          <Text style={styles.title}>GeoTwitter</Text>
+        </View>
+      )
+    }
+  };
+
+  showTweetForm=()=>{
+    this.setState({showTweetForm: !this.state.showTweetForm})
+  }
+
+  renderTweetForm=()=>{
+    return(
+      <Modal
+        animationType={"none"}
+        transparent={true}
+        visible={this.state.showTweetForm}
+        onRequestClose={() => {
+          this.setState({showTweetForm:false})
+        }}>
+        <View
+          style={{flex:1,justifyContent:'center',alignItems:'center',backgroundColor:'rgba(0, 0, 0, 0.5)'}}>
+          <TweetForm
+            ready={!(this.state.lastPosition==null)}
+            onPost={(message)=>{
+              console.log('onPost() '+message)
+              tweet={
+                  message:message,
+                  location:{
+                    latitude:this.state.lastPosition.coords.latitude,
+                    longitude:this.state.lastPosition.coords.longitude
+                  },
+                  author_username:this.state.authData.user.username
+                }
+                this.sendTweet(tweet);
+                this.setState({showTweetForm:false})
+            }}
+            onCancel={()=>{this.setState({showTweetForm:false})}}/>
+        </View>
+      </Modal>
+    )
+  }
+
   renderContent(){
     console.log("render content")
     console.log(this.state.authData)
@@ -208,119 +305,58 @@ export default class GeoTwitter extends Component {
       // not logged in, show login/register form
       return ( 
         <View>
-        <LoginForm 
-          onLoggedIn={(authData)=>{
-            console.log(authData)
-            this.saveAuthData(authData);
-            this.login(authData)
-            
-          }}/>
-          <TouchableHighlight
-            onPress={()=>{this.setState({showMap:true})}}>
-            <Text style={{color:'white', fontSize:40}}>MAP</Text>
-          </TouchableHighlight>   
-          <TouchableHighlight
-            onPress={()=>{
-                
-              }
-            }>
-            <Text style={{color:'white', fontSize:40}}>AXIOS</Text>
-          </TouchableHighlight>   
-          <Text style={{color:'white', fontSize:20}}>{this.state.msg}</Text>
+          <LoginForm 
+            onLoggedIn={(authData)=>{
+              console.log(authData)
+              this.saveAuthData(authData);
+              this.login(authData)
+              
+            }}/>
         </View>
       )
     }else if(this.state.showMap===false){
-      //console.log("loggedin content")
-      //console.log(this.state.tweets)
-      // logged in
       return(
-        <View style={{flex:1}}>
-          
-          <Modal
-            animationType={"slide"}
-            transparent={true}
-            visible={this.state.showTweetForm}
-            onRequestClose={() => {
-              alert("Modal has been closed.")
-              this.setState({showTweetForm:false})
-            }}>
-            <View
-              style={{flex:1,justifyContent:'center',alignItems:'center',backgroundColor:'rgba(0, 0, 0, 0.5)'}}>
-              <TweetForm
-                ready={!(this.state.lastPosition==null)}
-                onPost={(message)=>{
-                  console.log('onPost() '+message)
-                  tweet={
-                      message:message,
-                      location:{
-                        latitude:this.state.lastPosition.coords.latitude,
-                        longitude:this.state.lastPosition.coords.longitude
-                      },
-                      author_username:this.state.authData.user.username
-                    }
-                    this.sendTweet(tweet);
-                    this.setState({showTweetForm:false})
-                }}
-                onCancel={()=>{this.setState({showTweetForm:false})}}/>
-            </View>
-          </Modal>
-          <View>
-            <Text>{this.state.authData.user.username}</Text>
-            <TouchableHighlight
-              onPress={this.logout}>
-              <Text>Logout</Text>
-            </TouchableHighlight> 
-            <TouchableHighlight
-              onPress={()=>{
-                this.setState({showTweetForm: !this.state.showTweetForm})
-              }}>
-              <Text>Show Tweet Form</Text>
-            </TouchableHighlight> 
-            <Text>username</Text>
-            <TouchableHighlight
-              onPress={()=>{
-                  if(this.isAuthenticated()){
-                    this.refreshChat()
-                  }else{
-                    this.logout()
-                  }
-                }
-              }>
-              <View style={styles.button}>
-                <Text>REFRESH</Text>
-              </View>
-            </TouchableHighlight>    
-            <TouchableHighlight
-              onPress={()=>{this.setState({showMap:true})}}>
-              <Text style={{color:'white', fontSize:40}}>MAP</Text>
-            </TouchableHighlight>     
-          </View>          
-          <View style={{flex:1}} >
-
-            <ScrollView>
-              <View style={styles.messagesArea}>     
-
-
-                {this.renderTweets()}
-
-
-              </View>          
-
-            </ScrollView>    
-
-          </View> 
-        </View>
+        <Navigator      
+          ref={(nav) => { sceneNavigator = nav; }}
+          initialRoute={{name: 'home'}}      
+          renderScene={this.renderScene.bind(this)}
+          navigationBar={
+            <Navigator.NavigationBar
+              routeMapper={this.NavigationBarRouteMapper}
+              style={styles.navbar}/>
+          }/>
       )
     }else{
-      //console.log("map content")
       return(
-        <View style={{flex:1,backgroundColor:'green'}}>
+        <View style={{flex:1,marginTop:80}}>
           <TweetsMap tweet={this.state.selectedTweet}/>
         </View>
       )
     }
   }
 
+  renderScene(route,navigator){
+    switch(route.name){
+      case 'home':
+        return(
+          <View style={{marginTop:60}}>
+            {this.renderTweetForm()}
+            <StatusBar
+              backgroundColor="#279abc"
+              barStyle="light-content"
+            />
+            {this.renderTweets()}
+          </View>
+        )
+      case 'map':
+        return(
+          <View style={{flex:1,backgroundColor:'green'}}>
+            <TweetsMap tweet={this.state.selectedTweet}/>
+          </View>
+        )
+    }
+  }
+  
   render() {
     //console.log(this.state.apiResponse)
     return (
@@ -335,62 +371,86 @@ export default class GeoTwitter extends Component {
   sendTweet=(tweet)=>{
     axios.post('/tweets',tweet)
     .then((response)=>{
-      console.log('tweet posted, response:')
-      console.log(response)
+      alert('Tweet has been posted!')
+      this.refreshChat();
     }).catch(error=>{
-      console.log('error sending tweet')
-      console.log(error)
+      alert('Could not post Your Tweet:\n'+error)
     })
   }
 
   refreshChat=()=>{
-    // using fetch and proxy
-    {/*
-    fetch("http://accintern-test.apigee.net/geotwitter/tweets?map_users=true")
-    .then(response=>response.json())
-    .then(responseJSON=>{
-      this.setState({tweets:responseJSON})
-    }).catch(error=>{
-      console.log(error);
-    })
-    */}
+    this.setState({refreshing:true})
     axios.get('/tweets')
     .then(response=>{
       console.log('tweets response:')
       console.log(response)
-      this.setState({tweets:response.data.entities})
+      this.setState({tweets:response.data.entities,refreshing:false})
     }).catch(error=>{
+      this.setState({refreshing:false})
       console.log('error fetching tweets:');
       console.log(error);
     })
   }  
 
+  _onRefresh(){
+    this.refreshChat();
+  }  
+
   handleTweetClick=(tweet)=>{
-    Vibration.vibrate();
-    alert(JSON.stringify(tweet.location))
     //console.log('press')
-    this.setState({selectedTweet:tweet,showMap:true})
+    // this.setState({selectedTweet:tweet,showMap:true})
+
+    this.setState({selectedTweet:tweet})
+    sceneNavigator.push({name:'map'})
+  }
+
+  handleDeleteTweet=(tweet)=>{
+    // Works on both iOS and Android
+    Alert.alert(
+      'Delete',
+      'Are you sure you want to delete this Tweet?\n\"'+tweet.message+"\"",
+      [
+        {text: 'Cancel', onPress: () => console.log('Cancel Pressed'), style: 'cancel'},
+        {text: 'Yes', onPress: () => this.deleteTweet(tweet)},
+      ]
+    )
+  }
+
+  deleteTweet(tweet){
+    axios.delete('/tweets/'+tweet.uuid)
+    .then((response)=>{
+      alert('Tweet deleted!')
+      this.refreshChat();
+    }).catch(error=>{
+      alert('Could not delete this tweet =(')
+      console.log(error)
+    })
   }
 
   renderTweets=(onItemPressed)=>{
     instance = this;
-    return this.state.tweets.map(function(tweet,index){
-      return (
-        <TouchableOpacity onPress={()=>{instance.handleTweetClick(tweet)}}>
-          <View key={index} style={styles.tweetItem}>
-            <View style={{flexDirection:'row', alignItems:'flex-end'}}>
-              <Text style={{fontWeight:'bold', fontSize:18, color:'purple'}}>{tweet.author_username}</Text>
-              { /* First coma delimeted part = street */}
-              {tweet.street_address?
-                <Text> at {(""+tweet.street_address).split(',')[0]}</Text>
-              :null}
-            </View>
-            <Text style={styles.message} >{tweet.message}</Text>
-            <Text style={{alignSelf:'flex-end'}}>{moment(tweet.created).format('MMMM Do YYYY, h:mm:ss a')}</Text>
-          </View>
-        </TouchableOpacity>
-      )
-    })
+    
+    // 1. create the dataSource
+    ds = new ListView.DataSource({rowHasChanged: (r1, r2) => r1 !== r2});
+    tweetsDataSource=ds.cloneWithRows(this.state.tweets)
+
+    return (
+      <ListView
+        enableEmptySections={true}
+        refreshControl={
+          <RefreshControl
+            refreshing={this.state.refreshing}
+            onRefresh={this._onRefresh.bind(this)}
+          />}
+        dataSource={tweetsDataSource}
+        renderRow={(tweet) => 
+          <TweetItem 
+            handleDeleteTweet={instance.handleDeleteTweet}
+            handleTweetClick={instance.handleTweetClick}
+            tweet={tweet}
+            deletable={instance.state.authData.user.username===tweet.author_username}/>}
+      />
+    );
   }
 
   logOut=()=>{
@@ -404,7 +464,7 @@ export default class GeoTwitter extends Component {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#2BB8E2',
+    backgroundColor: '#f8f8ff',
     justifyContent:'center'
   },
   welcome: {
@@ -421,6 +481,7 @@ const styles = StyleSheet.create({
   messagesArea:{
     paddingLeft:8,
     paddingRight:8,
+    flex:1
   },
   message:{
     fontSize:22,
@@ -446,11 +507,27 @@ const styles = StyleSheet.create({
     backgroundColor:'white',
     borderColor:'gray'
   },
-  tweetItem:{
-    backgroundColor:'white',
-    margin:4, 
-    padding:8,
-    elevation:10
+  navbar:{
+    backgroundColor:'#2BB8E2',
+    elevation:2,
+    marginBottom:60
+  },
+  title:{
+    color:'white',
+    fontSize:24,
+    fontWeight:'bold'
+  },
+  navbarItemContainer:{
+    flex:1,
+    alignItems:'center',
+    justifyContent:'center'
+  },
+  navBarItemText:{
+    color:'white',
+    fontSize:20
+  },
+  navBarRightButtonsContainer:{
+    flexDirection:'row'
   }
 });
 

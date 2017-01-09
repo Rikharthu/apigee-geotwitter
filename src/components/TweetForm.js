@@ -19,7 +19,7 @@ import MapView from 'react-native-maps';
 export default class TweetForm extends Component {
 
     state={
-        message:''
+        message:'',
     }
 
     render(){
@@ -38,12 +38,12 @@ export default class TweetForm extends Component {
                         <ActivityIndicator
                             animating={true}
                             size="small"
-                            color='green'/>
+                            color='cyan'/>
                     </View>}
                 </View>
 
                 <TextInput 
-                    style={{fontSize:16,height:200,backgroundColor:'gray',borderRadius:10,marginBottom:10}}
+                    style={{fontSize:20,height:200,marginBottom:10}}
                     placeholder={'Write your tweet'}
                     multiline={true}
                     onChangeText={ text => this.setState({message: text})}/>
@@ -82,21 +82,20 @@ export default class TweetForm extends Component {
 const styles = {
     container: {
         backgroundColor: '#F5FCFF',
-        borderWidth:1,
-        borderColor:'blue',
-        padding:20
+        padding:20,
+        elevation:10
     },
     buttonsContainer:{
         flexDirection:'row'
     },
     leftButtonContainer:{
-        backgroundColor:'green',
+        backgroundColor:'#2BB8E2',
         borderBottomLeftRadius :16,
         borderTopLeftRadius :16,
         justifyContent:'center',
         alignItems:'center',
         padding:6,
-        width:100,
+        width:150,
         marginRight:1
     },
     rightButtonContainer:{
@@ -105,7 +104,7 @@ const styles = {
         justifyContent:'center',
         alignItems:'center',
         padding:6,
-        width:100,
+        width:150,
         marginLeft:1
     },
     buttonText:{
@@ -129,6 +128,6 @@ const styles = {
         backgroundColor:'gray'
     },
     activeButtonStyle:{
-        backgroundColor:'blue'
+        backgroundColor:'#2BB8E2'
     }
 }
